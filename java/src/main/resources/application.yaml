@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: time-deposit
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 100
+        order_updates: true
+
+time-deposit:
+  balance-update:
+    page-size: 1000
