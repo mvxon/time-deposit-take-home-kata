@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: time_deposit
+      POSTGRES_USER: time_deposit
+      POSTGRES_PASSWORD: time_deposit
+    ports:
+      - '5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U time_deposit -d time_deposit']
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  # Behind a profile so `./mvnw spring-boot:run` (Spring Boot Docker Compose support) starts only the database.
+  app:
+    profiles: [app]
+    build: .
+    image: time-deposit:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/time_deposit
+      SPRING_DATASOURCE_USERNAME: time_deposit
+      SPRING_DATASOURCE_PASSWORD: time_deposit
+    ports:
+      - '8080:8080'
