@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.ikigaidigital.domain.interest.AnnualRatePlan;
+import org.ikigaidigital.domain.interest.InterestContext;
+import org.ikigaidigital.domain.interest.InterestPlan;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -79,6 +82,47 @@ class TimeDepositCalculatorTest {
         assertThat(deposit)
                 .extracting(TimeDeposit::getId, TimeDeposit::getPlanType, TimeDeposit::getDays)
                 .containsExactly(7, "premium", 46);
+    }
+
+    @Test
+    void appliesInterestOfAdditionallyRegisteredAnnualRatePlan() {
+        var goldPlan = new AnnualRatePlan("gold", 0.12, days -> true);
+        var deposit = new TimeDeposit(1, "gold", 10000.00, 31);
+
+        new TimeDepositCalculator(List.of(goldPlan)).updateBalance(List.of(deposit));
+
+        assertThat(deposit.getBalance()).isEqualTo(10100.00);
+    }
+
+    @Test
+    void appliesGracePeriodToAdditionallyRegisteredPlans() {
+        var goldPlan = new AnnualRatePlan("gold", 0.12, days -> true);
+        var deposit = new TimeDeposit(1, "gold", 10000.00, 30);
+
+        new TimeDepositCalculator(List.of(goldPlan)).updateBalance(List.of(deposit));
+
+        assertThat(deposit.getBalance()).isEqualTo(10000.00);
+    }
+
+    @Test
+    void appliesInterestOfPlanWithNonLinearRule() {
+        var tieredPlan = new InterestPlan() {
+            @Override
+            public String planType() {
+                return "tiered";
+            }
+
+            @Override
+            public double monthlyInterest(InterestContext context) {
+                return Math.min(context.balance(), 10000.00) * 0.02 / 12
+                        + Math.max(context.balance() - 10000.00, 0) * 0.04 / 12;
+            }
+        };
+        var deposit = new TimeDeposit(1, "tiered", 16000.00, 100);
+
+        new TimeDepositCalculator(List.of(tieredPlan)).updateBalance(List.of(deposit));
+
+        assertThat(deposit.getBalance()).isEqualTo(16036.67);
     }
 
     @Test
