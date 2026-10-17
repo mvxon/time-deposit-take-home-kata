@@ -1,0 +1,134 @@
+openapi: 3.0.3
+info:
+  title: XA Bank Time Deposit API
+  description: Retrieves time deposits and applies monthly interest to their balances.
+  version: 1.0.0
+servers:
+  - url: /
+tags:
+  - name: TimeDeposits
+    description: Time deposit operations
+paths:
+  /time-deposits:
+    get:
+      tags:
+        - TimeDeposits
+      operationId: getAllTimeDeposits
+      summary: Retrieve all time deposits
+      responses:
+        '200':
+          description: All time deposits with their withdrawals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TimeDeposit'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+  /time-deposits/balance-updates:
+    post:
+      tags:
+        - TimeDeposits
+      operationId: updateAllBalances
+      summary: Apply monthly interest to the balances of all time deposits
+      description: >
+        Applies one month of interest to every time deposit in a single atomic transaction.
+        The operation is not idempotent: every call applies interest again. The caller (e.g. a monthly
+        scheduler) is responsible for invoking it once per accrual period and for not retrying blindly
+        after a timeout. A concurrent run is rejected with 409 and changes nothing.
+      responses:
+        '204':
+          description: Balances of all time deposits were updated
+        '409':
+          description: Another balance update ran concurrently and changed the same time deposits; nothing was applied
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          $ref: '#/components/responses/UnexpectedError'
+components:
+  responses:
+    UnexpectedError:
+      description: Unexpected server error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    Problem:
+      description: RFC 9457 problem details
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+          example: about:blank
+        title:
+          type: string
+          example: Conflict
+        status:
+          type: integer
+          format: int32
+          example: 409
+        detail:
+          type: string
+          example: Time deposits were updated concurrently; retry the request
+        instance:
+          type: string
+          format: uri
+          example: /time-deposits/balance-updates
+    TimeDeposit:
+      type: object
+      required:
+        - id
+        - planType
+        - balance
+        - days
+        - withdrawals
+      properties:
+        id:
+          type: integer
+          format: int32
+          example: 1
+        planType:
+          type: string
+          example: basic
+        balance:
+          type: number
+          description: Exact decimal amount with two fraction digits
+          example: 1234567.00
+        days:
+          type: integer
+          format: int32
+          example: 45
+        withdrawals:
+          type: array
+          items:
+            $ref: '#/components/schemas/Withdrawal'
+    Withdrawal:
+      type: object
+      required:
+        - id
+        - amount
+        - date
+      properties:
+        id:
+          type: integer
+          format: int32
+          example: 1
+        amount:
+          type: number
+          description: Exact decimal amount
+          example: 100.00
+        date:
+          type: string
+          format: date
+          example: '2026-01-15'
