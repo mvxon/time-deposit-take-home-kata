@@ -5,12 +5,14 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest
+@AutoConfigureMockMvc
 @Import({PostgresContainerConfiguration.class, TimeDepositFixtures.class})
 @TestPropertySource(properties = "time-deposit.balance-update.page-size=2")
 public @interface IntegrationTest {}
