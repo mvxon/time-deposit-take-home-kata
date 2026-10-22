@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(./mvnw:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker build:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git hash-object:*)",
+      "Bash(git add -- :*)",
+      "Bash(git commit -m :*)",
+      "Bash(git worktree:*)",
+      "Bash(codex exec -s read-only:*)",
+      "Bash(curl -s http://localhost:8080/:*)"
+    ],
+    "ask": [
+      "Edit(**/org/ikigaidigital/TimeDepositCalculatorTest.java)",
+      "Edit(**/db/migration/**)",
+      "Bash(git reset:*)",
+      "Bash(git restore:*)",
+      "Bash(git stash:*)",
+      "Bash(git push:*)"
+    ],
+    "deny": [
+      "Edit(**/org/ikigaidigital/TimeDeposit.java)",
+      "Edit(**/org/ikigaidigital/LegacyTimeDepositCalculator.java)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)",
+      "Bash(git checkout -- :*)",
+      "Bash(git push --force:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/preflight.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-commit.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/after-turn.sh",
+            "timeout": 180
+          }
+        ]
+      }
+    ]
+  }
+}
